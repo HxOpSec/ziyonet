@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import aiosqlite
 from fastapi import APIRouter, Depends, Query
@@ -99,6 +99,6 @@ async def export_books_pdf(
         content=binary,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"attachment; filename=books-{datetime.utcnow().date()}.pdf"
+            "Content-Disposition": f"attachment; filename=books-{datetime.now(timezone.utc).date()}.pdf"
         },
     )

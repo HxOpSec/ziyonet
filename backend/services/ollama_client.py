@@ -76,8 +76,6 @@ class OptimizedOllamaClient:
                     return answer, elapsed_ms, False
             except Exception as exc:
                 last_error = exc
-                if attempt < 2:
-                    await httpx.AsyncClient().aclose()
                 continue
 
         raise RuntimeError(f"Ollama request failed: {last_error}")

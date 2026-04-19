@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import model_validator
 
 
 class Settings(BaseSettings):
@@ -6,6 +7,7 @@ class Settings(BaseSettings):
 
     APP_NAME: str = "Ziyonet"
     API_PREFIX: str = "/api"
+    APP_ENV: str = "development"
 
     DATABASE_URL: str = "sqlite:///./ziyonet.db"
 
@@ -32,6 +34,15 @@ class Settings(BaseSettings):
 
     DEFAULT_ADMIN_USERNAME: str = "admin"
     DEFAULT_ADMIN_PASSWORD: str = "admin123"
+
+    @model_validator(mode="after")
+    def validate_security_defaults(self):
+        if self.APP_ENV.lower() != "development":
+            if self.SECRET_KEY == "change-me":
+                raise ValueError("SECRET_KEY must be changed outside development")
+            if self.DEFAULT_ADMIN_PASSWORD == "admin123":
+                raise ValueError("DEFAULT_ADMIN_PASSWORD must be changed outside development")
+        return self
 
 
 settings = Settings()

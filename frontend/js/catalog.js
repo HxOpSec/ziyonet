@@ -1,4 +1,6 @@
 window.Catalog = (() => {
+  const BOOKS_CACHE_TTL_MS = 5 * 60 * 1000;
+
   const state = {
     page: 1,
     per_page: 20,
@@ -88,7 +90,7 @@ window.Catalog = (() => {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       const value = JSON.parse(cached);
-      if (Date.now() - value.time < 5 * 60 * 1000) {
+      if (Date.now() - value.time < BOOKS_CACHE_TTL_MS) {
         state.books = value.data.items;
         state.total = value.data.total;
         renderGrid();
