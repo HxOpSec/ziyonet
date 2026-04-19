@@ -1,0 +1,9 @@
+{
+  "python.defaultInterpreterPath": "./backend/venv/bin/python",
+  "python.linting.enabled": true,
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  }
+}
