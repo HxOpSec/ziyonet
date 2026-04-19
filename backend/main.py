@@ -3,10 +3,10 @@ from collections import defaultdict, deque
 from pathlib import Path
 
 import aiosqlite
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.admin_api import router as admin_router
@@ -42,7 +42,7 @@ async def rate_limit_middleware(request: Request, call_next):
         while points and points[0] < now - window:
             points.popleft()
         if len(points) >= settings.API_RATE_LIMIT:
-            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+            return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
         points.append(now)
     return await call_next(request)
 

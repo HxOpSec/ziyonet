@@ -57,3 +57,27 @@ async def get_current_admin(
     if not user or not user["is_active"]:
         raise credentials_error
     return dict(user)
+
+
+async def get_optional_current_admin(
+    token: str | None = Depends(OAuth2PasswordBearer(tokenUrl="/api/admin/login", auto_error=False)),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username = payload.get("sub")
+        if not username:
+            return None
+    except JWTError:
+        return None
+
+    cursor = await db.execute(
+        "SELECT id, username, email, is_active FROM users WHERE username = ?",
+        (username,),
+    )
+    user = await cursor.fetchone()
+    if not user or not user["is_active"]:
+        return None
+    return dict(user)

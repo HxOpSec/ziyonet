@@ -3,11 +3,12 @@ import time
 import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException
 
+from config import settings
 from db import get_db
 from schemas.chat_schemas import ChatRequest, ChatResponse
 from services.book_service import BookService
 from services.ollama_client import OptimizedOllamaClient
-from utils.security import get_current_admin
+from utils.security import get_optional_current_admin
 
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -19,7 +20,7 @@ book_service = BookService()
 async def ask_chat(
     payload: ChatRequest,
     db: aiosqlite.Connection = Depends(get_db),
-    user: dict | None = Depends(get_current_admin),
+    user: dict | None = Depends(get_optional_current_admin),
 ):
     context = None
     if payload.book_id is not None:
@@ -55,7 +56,7 @@ async def ask_chat(
             user.get("id") if user else None,
             payload.message,
             answer,
-            "qwen3.5:4b",
+            settings.OLLAMA_MODEL,
             final_ms,
             payload.mode,
         ),
