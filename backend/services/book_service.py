@@ -7,6 +7,17 @@ from utils.validators import normalize_order, normalize_sort, sanitize
 
 
 class BookService:
+    SANITIZE_LIMITS = {
+        "title": 255,
+        "author": 255,
+        "isbn": 50,
+        "category": 100,
+        "description": 2000,
+        "publisher": 255,
+        "language": 20,
+        "cover_url": 1000,
+    }
+
     ALLOWED_UPDATE_FIELDS = {
         "title",
         "author",
@@ -89,24 +100,7 @@ class BookService:
         return dict(row) if row else None
 
     async def create_book(self, db: aiosqlite.Connection, data: dict[str, Any]) -> dict[str, Any]:
-        normalized = dict(data)
-        if isinstance(normalized.get("title"), str):
-            normalized["title"] = sanitize(normalized["title"], max_len=255)
-        if isinstance(normalized.get("author"), str):
-            normalized["author"] = sanitize(normalized["author"], max_len=255)
-        if isinstance(normalized.get("isbn"), str):
-            normalized["isbn"] = sanitize(normalized["isbn"], max_len=50)
-        if isinstance(normalized.get("category"), str):
-            normalized["category"] = sanitize(normalized["category"], max_len=100)
-        if isinstance(normalized.get("description"), str):
-            normalized["description"] = sanitize(normalized["description"], max_len=2000)
-        if isinstance(normalized.get("publisher"), str):
-            normalized["publisher"] = sanitize(normalized["publisher"], max_len=255)
-        if isinstance(normalized.get("language"), str):
-            normalized["language"] = sanitize(normalized["language"], max_len=20)
-        if isinstance(normalized.get("cover_url"), str):
-            normalized["cover_url"] = sanitize(normalized["cover_url"], max_len=1000)
-
+        normalized = self._sanitize_book_data(data)
         query = """
             INSERT INTO books (
                 title, author, isbn, category, description, year, publisher,
@@ -136,34 +130,27 @@ class BookService:
             return await self.get_book(db, book_id)
 
         safe_data = {key: value for key, value in data.items() if key in self.ALLOWED_UPDATE_FIELDS}
-        if "title" in safe_data and isinstance(safe_data["title"], str):
-            safe_data["title"] = sanitize(safe_data["title"], max_len=255)
-        if "author" in safe_data and isinstance(safe_data["author"], str):
-            safe_data["author"] = sanitize(safe_data["author"], max_len=255)
-        if "isbn" in safe_data and isinstance(safe_data["isbn"], str):
-            safe_data["isbn"] = sanitize(safe_data["isbn"], max_len=50)
-        if "category" in safe_data and isinstance(safe_data["category"], str):
-            safe_data["category"] = sanitize(safe_data["category"], max_len=100)
-        if "description" in safe_data and isinstance(safe_data["description"], str):
-            safe_data["description"] = sanitize(safe_data["description"], max_len=2000)
-        if "publisher" in safe_data and isinstance(safe_data["publisher"], str):
-            safe_data["publisher"] = sanitize(safe_data["publisher"], max_len=255)
-        if "language" in safe_data and isinstance(safe_data["language"], str):
-            safe_data["language"] = sanitize(safe_data["language"], max_len=20)
-        if "cover_url" in safe_data and isinstance(safe_data["cover_url"], str):
-            safe_data["cover_url"] = sanitize(safe_data["cover_url"], max_len=1000)
+        safe_data = self._sanitize_book_data(safe_data)
 
         if not safe_data:
             return await self.get_book(db, book_id)
 
-        set_clause = ", ".join([key + " = ?" for key in safe_data.keys()])
-        params = list(safe_data.values()) + [book_id]
+        columns = [key for key in safe_data.keys() if key in self.ALLOWED_UPDATE_FIELDS]
+        set_clause = ", ".join([column + " = ?" for column in columns])
+        params = [safe_data[column] for column in columns] + [book_id]
         await db.execute(
             "UPDATE books SET " + set_clause + ", updated_at = CURRENT_TIMESTAMP WHERE id = ?",
             params,
         )
         await db.commit()
         return await self.get_book(db, book_id)
+
+    def _sanitize_book_data(self, data: dict[str, Any]) -> dict[str, Any]:
+        sanitized = dict(data)
+        for field, max_len in self.SANITIZE_LIMITS.items():
+            if isinstance(sanitized.get(field), str):
+                sanitized[field] = sanitize(sanitized[field], max_len=max_len)
+        return sanitized
 
     async def delete_book(self, db: aiosqlite.Connection, book_id: int) -> bool:
         cursor = await db.execute("DELETE FROM books WHERE id = ?", (book_id,))

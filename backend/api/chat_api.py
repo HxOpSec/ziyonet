@@ -28,7 +28,7 @@ async def ask_chat(
 ):
     message = sanitize(payload.message, max_len=1000)
     if not message:
-        raise HTTPException(status_code=400, detail="Message cannot be empty")
+        raise HTTPException(status_code=400, detail="Message must contain valid text")
 
     context = None
     if payload.book_id is not None:
