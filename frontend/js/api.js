@@ -1,4 +1,30 @@
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = 'http://127.0.0.1:8000/api';
+const REQUEST_TIMEOUT_MS = 95000;
+
+function sanitizeInput(value, maxLen = 1000) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+        .slice(0, maxLen)
+        .replace(/[<>"'`\\]/g, '')
+        .replace(/[\u0000-\u001F\u007F]/g, '')
+        .trim();
+}
+
+function toQuery(params = {}) {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+        if (value === null || value === undefined) return;
+        if (typeof value === 'string') {
+            const cleaned = sanitizeInput(value, 300);
+            if (!cleaned) return;
+            query.append(key, cleaned);
+            return;
+        }
+        query.append(key, String(value));
+    });
+    const q = query.toString();
+    return q ? `?${q}` : '';
+}
 
 const Api = {
     async request(path, options = {}) {
@@ -9,7 +35,19 @@ const Api = {
         };
         if (token) headers.Authorization = `Bearer ${token}`;
 
-        const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+        let res;
+        try {
+            res = await fetch(`${API_BASE}${path}`, { ...options, headers, signal: controller.signal });
+        } catch (err) {
+            if (err?.name === 'AbortError') {
+                throw new Error('Сервер отвечает слишком долго. Попробуйте ещё раз.');
+            }
+            throw new Error('Не удалось подключиться к серверу.');
+        } finally {
+            clearTimeout(timer);
+        }
         if (!res.ok) {
             const data = await res.json().catch(() => ({ detail: 'Request failed' }));
             throw new Error(data.detail || 'Request failed');
@@ -20,8 +58,8 @@ const Api = {
     },
 
     getBooks(params = {}) {
-        const q = new URLSearchParams(params).toString();
-        return this.request(`/books?${q}`);
+        const q = toQuery(params);
+        return this.request(`/books${q}`);
     },
 
     getBook(id) {
@@ -53,7 +91,12 @@ const Api = {
     },
 
     chat(payload) {
-        return this.request('/chat', { method: 'POST', body: JSON.stringify(payload) });
+        const safePayload = {
+            message: sanitizeInput(payload.message, 1000),
+            mode: payload.mode === 'deep' ? 'deep' : 'fast',
+            book_id: Number.isInteger(payload.book_id) ? payload.book_id : null,
+        };
+        return this.request('/chat', { method: 'POST', body: JSON.stringify(safePayload) });
     },
 
     aiUsage() {
