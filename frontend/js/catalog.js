@@ -1,5 +1,6 @@
 window.Catalog = (() => {
   const BOOKS_CACHE_TTL_MS = 5 * 60 * 1000;
+  const PLACEHOLDER_COVER = 'https://placehold.co/240x320?text=No+Cover';
 
   const state = {
     page: 1,
@@ -21,9 +22,10 @@ window.Catalog = (() => {
 
   function bookCard(book) {
     const fav = state.favorites.has(book.id) ? '★' : '☆';
+    const safeCover = typeof book.cover_url === 'string' && book.cover_url.trim() ? escapeHtml(book.cover_url.trim()) : PLACEHOLDER_COVER;
     return `
       <article class="book-card scale-on-hover">
-        <img loading="lazy" src="${book.cover_url || 'https://placehold.co/240x320?text=No+Cover'}" alt="cover" />
+        <img loading="lazy" src="${safeCover}" alt="cover" />
         <div class="book-body">
           <h3>${escapeHtml(book.title)}</h3>
           <p>${escapeHtml(book.author)}</p>
@@ -32,7 +34,7 @@ window.Catalog = (() => {
           <div class="row gap-sm">
             <button class="btn ghost" data-preview="${book.id}">Быстрый просмотр</button>
             <button class="btn ghost" data-favorite="${book.id}">${fav}</button>
-            <a class="btn primary" href="/book-detail.html?id=${book.id}">Открыть</a>
+            <a class="btn primary" href="book-detail.html?id=${book.id}">Открыть</a>
           </div>
         </div>
       </article>`;
@@ -72,10 +74,25 @@ window.Catalog = (() => {
   function renderGrid() {
     const grid = document.getElementById('booksGrid');
     if (!state.books.length) {
-      grid.innerHTML = '<div class="skeleton">Книги не найдены</div>';
+      grid.innerHTML = '<div class="empty-state">Книги не найдены</div>';
       return;
     }
     grid.innerHTML = state.books.map(bookCard).join('');
+  }
+
+  function renderSkeletons(count = 6) {
+    const grid = document.getElementById('booksGrid');
+    grid.innerHTML = Array.from({ length: count }, () => `
+      <article class="book-card skeleton-card pulse">
+        <div class="skeleton skeleton-cover"></div>
+        <div class="book-body">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      </article>
+    `).join('');
   }
 
   function updatePagination() {
@@ -99,7 +116,7 @@ window.Catalog = (() => {
       }
     }
 
-    document.getElementById('booksGrid').innerHTML = '<div class="skeleton pulse">Загрузка книг...</div>';
+    renderSkeletons();
     try {
       // Фильтруем пустые параметры
       const params = {
@@ -151,8 +168,8 @@ window.Catalog = (() => {
   function bindFilters() {
     const debounced = debounce(() => {
       state.page = 1;
-      state.q = document.getElementById('searchInput').value.trim();
-      state.category = document.getElementById('categoryFilter').value;
+      state.q = sanitizeSearchField(document.getElementById('searchInput').value, 255);
+      state.category = sanitizeSearchField(document.getElementById('categoryFilter').value, 100);
       state.year = document.getElementById('yearFilter').value;
       state.available = document.getElementById('availabilityFilter').value;
       state.sort_by = document.getElementById('sortBy').value;
@@ -180,6 +197,14 @@ window.Catalog = (() => {
     document.getElementById('modalClose').addEventListener('click', () => {
       document.getElementById('quickModal').classList.add('hidden');
     });
+  }
+
+  function sanitizeSearchField(value, maxLen) {
+    return String(value || '')
+      .slice(0, maxLen)
+      .replace(/[<>"'`\\]/g, '')
+      .replace(/[\u0000-\u001F\u007F]/g, '')
+      .trim();
   }
 
   return {

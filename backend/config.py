@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
 
-    DATABASE_URL: str = "sqlite:///./ziyonet.db"
+    DATABASE_URL: str = "sqlite:///./library.db"
 
     OLLAMA_URL: str = "http://localhost:11434/api/chat"
     OLLAMA_MODEL: str = "qwen3.5:4b"

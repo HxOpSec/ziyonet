@@ -10,36 +10,43 @@
   </head>
   <body>
     <header class="header sticky">
-      <div class="container row between center">
-        <h1>Ziyonet</h1>
+      <div class="container row between center gap-md">
+        <div class="brand-block">
+          <h1>Ziyonet</h1>
+          <p class="muted">Университетская библиотека с локальным ИИ</p>
+        </div>
         <div class="search-wrap">
           <input id="searchInput" type="search" placeholder="Поиск по названию, автору, ISBN, категории" />
         </div>
-        <a class="btn ghost" href="/admin.html">Админка</a>
+        <a class="btn ghost" href="admin.html">Админка</a>
       </div>
     </header>
 
     <main class="container grid-main">
-      <section class="panel fade-in" id="catalogSection">
-        <div class="row gap-sm wrap filters">
-          <select id="categoryFilter"><option value="">Все категории</option></select>
-          <input id="yearFilter" type="number" min="0" max="3000" placeholder="Год" />
-          <select id="availabilityFilter">
+      <section class="panel fade-in" id="catalogSection" aria-label="Каталог книг">
+        <div class="section-head">
+          <h2>Каталог книг</h2>
+          <p class="muted">Поиск, фильтрация и быстрый просмотр</p>
+        </div>
+        <div class="filters-grid mt-sm">
+          <select id="categoryFilter" aria-label="Категория"><option value="">Все категории</option></select>
+          <input id="yearFilter" type="number" min="0" max="3000" placeholder="Год" aria-label="Год" />
+          <select id="availabilityFilter" aria-label="Доступность">
             <option value="">Любая доступность</option>
             <option value="true">В наличии</option>
             <option value="false">Нет в наличии</option>
           </select>
-          <select id="sortBy">
+          <select id="sortBy" aria-label="Сортировка">
             <option value="created_at">Сначала новые</option>
             <option value="title">По названию</option>
             <option value="year">По году</option>
           </select>
-          <select id="orderBy">
+          <select id="orderBy" aria-label="Порядок">
             <option value="desc">По убыванию</option>
             <option value="asc">По возрастанию</option>
           </select>
         </div>
-        <div id="booksGrid" class="books-grid"></div>
+        <div id="booksGrid" class="books-grid mt-md"></div>
         <div class="row between center mt-md">
           <button id="prevPage" class="btn ghost">Назад</button>
           <span id="pageInfo">Страница 1</span>
@@ -47,13 +54,16 @@
         </div>
       </section>
 
-      <section class="panel fade-in">
-        <h2>ИИ-ассистент</h2>
+      <section class="panel fade-in" aria-label="Чат с ИИ-ассистентом">
+        <div class="section-head">
+          <h2>ИИ-ассистент</h2>
+          <p class="muted">Модель: qwen3.5:4b (локально через Ollama)</p>
+        </div>
         <div class="row gap-sm">
           <label class="mode"><input type="radio" name="mode" value="fast" checked /> Быстрый</label>
           <label class="mode"><input type="radio" name="mode" value="deep" /> Глубокое мышление</label>
         </div>
-        <select id="bookContextSelect" class="mt-sm"><option value="">Без контекста книги</option></select>
+        <select id="bookContextSelect" class="mt-sm" aria-label="Контекст книги"><option value="">Без контекста книги</option></select>
         <div id="chatMessages" class="chat-box mt-sm"></div>
         <div class="row gap-sm mt-sm">
           <textarea id="chatInput" rows="3" placeholder="Задайте вопрос..." class="grow"></textarea>
