@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ziyonet — Книга</title>
+    <link rel="stylesheet" href="/static/css/main.css" />
+    <link rel="stylesheet" href="/static/css/components.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container row between center">
+        <h1>Детали книги</h1>
+        <a class="btn ghost" href="/">Назад</a>
+      </div>
+    </header>
+    <main class="container panel" id="bookDetail"></main>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script>
+      (async () => {
+        const params = new URLSearchParams(location.search);
+        const id = params.get('id');
+        if (!id) return;
+        const book = await Api.getBook(id);
+        const root = document.getElementById('bookDetail');
+        root.innerHTML = `
+          <div class="book-detail-grid">
+            <img loading="lazy" src="${book.cover_url || 'https://placehold.co/240x320?text=No+Cover'}" alt="cover"/>
+            <div>
+              <h2>${escapeHtml(book.title)}</h2>
+              <p><b>Автор:</b> ${escapeHtml(book.author)}</p>
+              <p><b>Год:</b> ${book.year || '—'}</p>
+              <p><b>Категория:</b> ${escapeHtml(book.category || '—')}</p>
+              <p><b>Описание:</b> ${escapeHtml(book.description || 'Нет описания')}</p>
+            </div>
+          </div>`;
+      })();
+    </script>
+  </body>
+</html>
