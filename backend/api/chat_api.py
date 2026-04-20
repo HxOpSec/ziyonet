@@ -1,14 +1,16 @@
 import time
 
 import aiosqlite
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from config import settings
 from db import get_db
 from schemas.chat_schemas import ChatRequest, ChatResponse
 from services.book_service import BookService
 from services.ollama_client import OptimizedOllamaClient
+from utils.rate_limit import limiter
 from utils.security import get_optional_current_admin
+from utils.validators import sanitize
 
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -17,11 +19,17 @@ book_service = BookService()
 
 
 @router.post("", response_model=ChatResponse)
+@limiter.limit("30/minute")
 async def ask_chat(
+    request: Request,
     payload: ChatRequest,
     db: aiosqlite.Connection = Depends(get_db),
     user: dict | None = Depends(get_optional_current_admin),
 ):
+    message = sanitize(payload.message, max_len=1000)
+    if not message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+
     context = None
     if payload.book_id is not None:
         book = await book_service.get_book(db, payload.book_id)
@@ -37,7 +45,7 @@ async def ask_chat(
     started = time.perf_counter()
     try:
         answer, response_time_ms, cached = await ollama_client.ask(
-            question=payload.message,
+            question=message,
             mode=payload.mode,
             book_context=context,
         )
@@ -54,7 +62,7 @@ async def ask_chat(
         """,
         (
             user.get("id") if user else None,
-            payload.message,
+            message,
             answer,
             settings.OLLAMA_MODEL,
             final_ms,

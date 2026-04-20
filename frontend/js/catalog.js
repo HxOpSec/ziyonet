@@ -101,16 +101,18 @@ window.Catalog = (() => {
 
     document.getElementById('booksGrid').innerHTML = '<div class="skeleton pulse">Загрузка книг...</div>';
     try {
-      const data = await Api.getBooks({
+      const params = {
         page: state.page,
         per_page: state.per_page,
-        q: state.q,
-        category: state.category,
-        year: state.year,
-        available: state.available,
         sort_by: state.sort_by,
         order: state.order,
-      });
+      };
+      if (state.q?.trim()) params.q = state.q.trim();
+      if (state.category?.trim()) params.category = state.category.trim();
+      if (state.year && state.year !== '') params.year = state.year;
+      if (state.available !== '') params.available = state.available;
+
+      const data = await Api.getBooks(params);
       state.books = data.items;
       state.total = data.total;
       localStorage.setItem(cacheKey, JSON.stringify({ time: Date.now(), data }));
