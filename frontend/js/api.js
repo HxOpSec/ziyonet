@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = window.__API_BASE__ || `${window.location.protocol}//127.0.0.1:8000/api`;
 
 const Api = {
   async request(path, options = {}) {
@@ -21,7 +21,8 @@ const Api = {
 
   getBooks(params = {}) {
     const q = new URLSearchParams(params).toString();
-    return this.request(`/books?${q}`);
+    const path = q ? `/books?${q}` : '/books';
+    return this.request(path);
   },
 
   getBook(id) {

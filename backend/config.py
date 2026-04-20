@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Ziyonet"
     API_PREFIX: str = "/api"
     APP_ENV: str = "development"
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     DATABASE_URL: str = "sqlite:///./ziyonet.db"
 
@@ -43,6 +44,10 @@ class Settings(BaseSettings):
             if self.DEFAULT_ADMIN_PASSWORD == "admin123":
                 raise ValueError("DEFAULT_ADMIN_PASSWORD must be changed outside development")
         return self
+
+    @property
+    def allowed_origins_list(self) -> list[str]:
+        return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
 
 
 settings = Settings()

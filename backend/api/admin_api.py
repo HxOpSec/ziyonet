@@ -1,8 +1,9 @@
 import aiosqlite
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from db import get_db
 from schemas.user_schemas import TokenResponse, UserCreate, UserLogin, UserOut
+from utils.rate_limit import limiter
 from utils.security import create_access_token, get_current_admin, get_password_hash, verify_password
 
 
@@ -10,7 +11,12 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(payload: UserLogin, db: aiosqlite.Connection = Depends(get_db)):
+@limiter.limit("10/minute")
+async def login(
+    request: Request,
+    payload: UserLogin,
+    db: aiosqlite.Connection = Depends(get_db),
+):
     cursor = await db.execute(
         "SELECT id, username, password_hash, is_active FROM users WHERE username = ?",
         (payload.username,),
